@@ -38,6 +38,9 @@ jobs:
           key: 'test-key-123'
           image: "byjg/static-httpserver"
 
+          # For testing mostly, or using non-latest cli version.
+          # cli_path: /mirrord/target/debug/mirrord
+
       - name: Print session key
         run: echo "Session key = ${{ steps.preview.outputs.session-key }}"
 

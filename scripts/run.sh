@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 #
-# run.sh — Entrypoint for the mirrord preview GitHub Action.
+# run.sh - Entrypoint for the mirrord preview GitHub Action.
 #
 # Expects the following environment variables (set by action.yml):
-#   INPUT_ACTION    — "start" or "stop"
-#   INPUT_TARGET    — Kubernetes target path        (start, required)
-#   INPUT_NAMESPACE — Kubernetes namespace           (start, optional)
-#   INPUT_MODE      — steal | mirror                (start, default: steal)
-#   INPUT_FILTER    — header filter regex            (start, required)
-#   INPUT_PORTS     — JSON array of ports            (start, optional)
-#   INPUT_TTL_MINS  — int or "infinite"              (start, optional)
-#   INPUT_KEY       — session key                    (start: optional, stop: required)
-#   INPUT_IMAGE     — container image for preview    (start, required)
-#   MIRRORD_PROGRESS_MODE — should be "json" (set by action.yml)
+#   INPUT_ACTION          - "start" or "stop"
+#   INPUT_TARGET          - Kubernetes target path      (start, required)
+#   INPUT_NAMESPACE       - Kubernetes namespace        (start, optional)
+#   INPUT_MODE            - steal | mirror              (start, default: steal)
+#   INPUT_FILTER          - header filter regex         (start, required)
+#   INPUT_PORTS           - JSON array of ports         (start, optional)
+#   INPUT_TTL_MINS        - int or "infinite"           (start, optional)
+#   INPUT_KEY             - session key                 (start: optional, stop: required)
+#   INPUT_IMAGE           - container image for preview (start, required)
+#   MIRRORD_PROGRESS_MODE - should be "json"            (set by action.yml)
 #
 set -euo pipefail
 
@@ -134,7 +134,7 @@ case "${INPUT_ACTION}" in
     ' 2>/dev/null | head -1 || true)
 
 		if [[ -z "${SESSION_KEY}" ]]; then
-			echo "::warning::Could not extract session key from mirrord output."
+			die "Could not extract session key from mirrord output."
 		else
 			echo "session-key=${SESSION_KEY}" >> "$GITHUB_OUTPUT"
 			echo "::notice::Preview session key: ${SESSION_KEY}"
