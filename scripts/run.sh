@@ -5,11 +5,13 @@
 # Expects the following environment variables (set by action.yml):
 #   INPUT_ACTION    — "start" or "stop"
 #   INPUT_TARGET    — Kubernetes target path        (start, required)
+#   INPUT_NAMESPACE — Kubernetes namespace           (start, optional)
 #   INPUT_MODE      — steal | mirror                (start, default: steal)
 #   INPUT_FILTER    — header filter regex            (start, required)
 #   INPUT_PORTS     — JSON array of ports            (start, optional)
 #   INPUT_TTL_MINS  — int or "infinite"              (start, optional)
 #   INPUT_KEY       — session key                    (start: optional, stop: required)
+#   INPUT_IMAGE     — container image for preview    (start, required)
 #   MIRRORD_PROGRESS_MODE — should be "json" (set by action.yml)
 #
 set -euo pipefail
@@ -27,29 +29,60 @@ case "${INPUT_ACTION}" in
 		# ---- Validate required inputs ---------------------------------------- #
 		[[ -z "${INPUT_TARGET:-}" ]] && die "input 'target' is required for action=start"
 		[[ -z "${INPUT_FILTER:-}" ]] && die "input 'filter' is required for action=start"
+		[[ -z "${INPUT_IMAGE:-}" ]] && die "input 'image' is required for action=start"
 
 		# ---- Build mirrord.json ---------------------------------------------- #
 		CONFIG_DIR="$(mktemp -d)"
 		CONFIG_FILE="${CONFIG_DIR}/mirrord.json"
 
-		# Start with the base config object using jq
-		jq -n \
-		   --arg target "${INPUT_TARGET}" \
-		   --arg mode   "${INPUT_MODE:-steal}" \
-		   --arg filter "${INPUT_FILTER}" \
-		   '{
-      target: $target,
-      feature: {
-        network: {
-          incoming: {
-            mode: $mode,
-            http_filter: {
-              header_filter: $filter
+		# Start with the base config object using jq.
+		# If namespace is set, target becomes an object; otherwise a plain string.
+		if [[ -n "${INPUT_NAMESPACE:-}" ]]; then
+			jq -n \
+			   --arg target_path "${INPUT_TARGET}" \
+			   --arg target_ns   "${INPUT_NAMESPACE}" \
+			   --arg mode        "${INPUT_MODE:-steal}" \
+			   --arg filter      "${INPUT_FILTER}" \
+			   --arg image       "${INPUT_IMAGE}" \
+			   '{
+        target: { path: $target_path, namespace: $target_ns },
+        feature: {
+          network: {
+            incoming: {
+              mode: $mode,
+              http_filter: {
+                header_filter: $filter
+              }
             }
+          },
+          preview: {
+            image: $image
           }
         }
-      }
-    }' > "${CONFIG_FILE}"
+      }' > "${CONFIG_FILE}"
+		else
+			jq -n \
+			   --arg target "${INPUT_TARGET}" \
+			   --arg mode   "${INPUT_MODE:-steal}" \
+			   --arg filter "${INPUT_FILTER}" \
+			   --arg image  "${INPUT_IMAGE}" \
+			   '{
+        target: $target,
+        feature: {
+          network: {
+            incoming: {
+              mode: $mode,
+              http_filter: {
+                header_filter: $filter
+              }
+            }
+          },
+          preview: {
+            image: $image
+          }
+        }
+      }' > "${CONFIG_FILE}"
+		fi
 
 		# Optionally add http_filter.ports (expects a JSON array string like "[80, 8080]")
 		if [[ -n "${INPUT_PORTS:-}" ]]; then
@@ -90,20 +123,18 @@ case "${INPUT_ACTION}" in
 		echo "::endgroup::"
 
 		# ---- Extract session key from JSON output ---------------------------- #
-		# TODO: Replace the jq expression below with the actual extraction logic
-		#       once the mirrord preview JSON output format is confirmed.
-		#       The JSON progress output (MIRRORD_PROGRESS_MODE=json) should
-		#       contain the session key. Pipe $OUTPUT through jq to extract it.
-		#
-		# Example placeholder — adjust the jq filter to match real output:
+		# mirrord emits one JSON object per line. The session key appears as:
+		#   {"type":"NewTask","name":"key: <value>","parent":"mirrord preview start"}
+		# We grab the .name field that starts with "key: " and strip the prefix.
 		SESSION_KEY=$(echo "${OUTPUT}" | jq -r '
-      # TODO: write the real jq filter here.
-      # Placeholder: try to find a "key" or "session_key" field in any JSON line.
-      select(.key != null) | .key // empty
-    ' 2>/dev/null | tail -1 || true)
+      select(.name != null)
+      | .name
+      | select(startswith("key: "))
+      | ltrimstr("key: ")
+    ' 2>/dev/null | head -1 || true)
 
 		if [[ -z "${SESSION_KEY}" ]]; then
-			echo "::warning::Could not extract session key from mirrord output. You may need to update the jq extraction logic."
+			echo "::warning::Could not extract session key from mirrord output."
 		else
 			echo "session-key=${SESSION_KEY}" >> "$GITHUB_OUTPUT"
 			echo "::notice::Preview session key: ${SESSION_KEY}"

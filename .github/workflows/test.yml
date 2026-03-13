@@ -6,17 +6,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup kubeconfig
+        run: |
+          KUBE_CFG="$HOME/.kube/config"
+          if [ ! -f "$KUBE_CFG" ]; then
+            echo "::error::No kubeconfig found at $KUBE_CFG"
+            exit 1
+          fi
+          echo "Found kubeconfig at $KUBE_CFG"
+          PATCHED="$HOME/.kube/config-patched"
+          sed "s|/home/[^/]*/.minikube|$HOME/.minikube|g" "$KUBE_CFG" > "$PATCHED"
+          echo "KUBECONFIG=$PATCHED" >> "$GITHUB_ENV"
+          echo "Patched cert paths:"
+          grep -E 'certificate|client-key' "$PATCHED" || true
+
       - name: Start preview
         id: preview
         uses: ./
         with:
           action: start
-          target: deployment/my-app
+          target: deployment/echoserver"
+          namespace: echoserver
           mode: steal
           filter: 'x-preview-id: test-123'
-          ports: '[80, 8080]'
-          ttl_mins: '30'
+          # ports: '[80, 8080]'
+          # ttl_mins: '30'
           key: 'test-key-123'
+          image: "byjg/static-httpserver"
 
       - name: Print session key
         run: echo "Session key = ${{ steps.preview.outputs.session-key }}"
@@ -25,6 +42,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup kubeconfig
+        run: |
+          KUBE_CFG="$HOME/.kube/config"
+          if [ ! -f "$KUBE_CFG" ]; then
+            echo "::error::No kubeconfig found at $KUBE_CFG"
+            exit 1
+          fi
+          PATCHED="$HOME/.kube/config-patched"
+          sed "s|/home/[^/]*/.minikube|$HOME/.minikube|g" "$KUBE_CFG" > "$PATCHED"
+          echo "KUBECONFIG=$PATCHED" >> "$GITHUB_ENV"
 
       - name: Stop preview
         uses: ./

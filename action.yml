@@ -11,6 +11,9 @@ inputs:
   target:
     description: 'Kubernetes target path (e.g. deployment/my-app). Required for start.'
     required: false
+  namespace:
+    description: 'Kubernetes namespace of the target. Optional, defaults to current context namespace.'
+    required: false
   mode:
     description: 'Traffic mode: "steal" or "mirror". Default: steal'
     required: false
@@ -23,6 +26,9 @@ inputs:
     required: false
   ttl_mins:
     description: 'Session time-to-live in minutes. Integer or "infinite".'
+    required: false
+  image:
+    description: 'Container image for the preview environment (e.g. myrepo/myapp:latest). Required for start.'
     required: false
   key:
     description: 'Unique preview session key. Optional for start (auto-generated if omitted), required for stop.'
@@ -49,19 +55,31 @@ runs:
 
     - name: Restore mirrord CLI from cache
       id: cache-mirrord
+      # continue-on-error so act (and other non-GitHub environments) don't
+      # cascade-fail the entire composite action when the cache service is
+      # unavailable.
+      continue-on-error: true
       uses: actions/cache@v4
       with:
         path: /usr/local/bin/mirrord
         key: mirrord-${{ runner.os }}-${{ runner.arch }}-${{ steps.mirrord-version.outputs.version }}
 
     - name: Install mirrord CLI
-      if: steps.cache-mirrord.outputs.cache-hit != 'true'
+      # Install if the binary is missing — works whether cache hit, cache
+      # miss, or cache step failed entirely (e.g. running under act).
+      if: always()
       shell: bash
       run: |
-        curl -fsSL https://raw.githubusercontent.com/metalbear-co/mirrord/main/scripts/install.sh | bash
-        echo "mirrord installed: $(mirrord --version)"
+        if command -v mirrord &>/dev/null; then
+          echo "mirrord already available: $(mirrord --version)"
+        else
+          echo "Installing mirrord..."
+          curl -fsSL https://raw.githubusercontent.com/metalbear-co/mirrord/main/scripts/install.sh | bash
+          echo "mirrord installed: $(mirrord --version)"
+        fi
 
     - name: Verify mirrord CLI
+      if: always()
       shell: bash
       run: mirrord --version
 
@@ -70,15 +88,18 @@ runs:
     # ------------------------------------------------------------------ #
     - name: Run mirrord preview
       id: run-preview
+      if: always()
       shell: bash
       env:
         INPUT_ACTION: ${{ inputs.action }}
         INPUT_TARGET: ${{ inputs.target }}
+        INPUT_NAMESPACE: ${{ inputs.namespace }}
         INPUT_MODE: ${{ inputs.mode }}
         INPUT_FILTER: ${{ inputs.filter }}
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_TTL_MINS: ${{ inputs.ttl_mins }}
         INPUT_KEY: ${{ inputs.key }}
+        INPUT_IMAGE: ${{ inputs.image }}
         MIRRORD_PROGRESS_MODE: json
       run: |
         set -euo pipefail
