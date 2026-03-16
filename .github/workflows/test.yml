@@ -2,7 +2,7 @@
 # Run with act -j test-start --container-options "-v /home/user/.kube:/root/.kube -v /home/user/.minikube:/root/.minikube"
 
 name: Test mirrord preview action
-on: push
+on: workflow_dispatch
 
 jobs:
   test-start:
