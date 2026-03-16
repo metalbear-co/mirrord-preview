@@ -73,19 +73,18 @@ jobs:
 ---
 
 ## Inputs
-
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `action` | **yes** | — | `start` or `stop`. |
-| `target` | **yes** (start) | — | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target`](https://metalbear.com/mirrord/docs/config/options#root-target). |
-| `namespace` | no | Current context namespace | Kubernetes namespace of the target. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#root-target). |
-| `image` | **yes** (start) | — | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
-| `mode` | no | `steal` | Traffic mode: `steal` or `mirror`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
-| `filter` | **yes** (start) | — | Header filter regex for incoming HTTP traffic. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
-| `ports` | no | — | JSON array of HTTP filter ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.http_filter.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
-| `ttl_mins` | no | — | Session time-to-live in minutes. Integer or `"infinite"`. Passed as a `--ttl` CLI flag. |
-| `key` | **yes** (stop) / optional (start) | — | Unique preview session identifier. Auto-generated on start if omitted. |
-| `cli_path` | no | — | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
+| Input | Required | Description |
+|-------|----------|-------------|
+| `action` | **yes** | `start` or `stop`. |
+| `target` | **yes** (start) | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target`](https://metalbear.com/mirrord/docs/config/options#root-target). |
+| `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#root-target). |
+| `image` | **yes** (start) | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
+| `mode` | no | Traffic mode: `steal` or `mirror`. Defaults to `steal`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
+| `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
+| `ports` | no | JSON array of HTTP filter ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.http_filter.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
+| `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Passed as a `--ttl` CLI flag. |
+| `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. |
+| `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
 
 ---
 
