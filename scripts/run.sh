@@ -35,53 +35,34 @@ case "${INPUT_ACTION}" in
 		CONFIG_DIR="$(mktemp -d)"
 		CONFIG_FILE="${CONFIG_DIR}/mirrord.json"
 
-		# Start with the base config object using jq.
-		# If namespace is set, target becomes an object; otherwise a plain string.
+		# Build base config — always use object notation for target.
+		jq -n \
+		   --arg target_path "${INPUT_TARGET}" \
+		   --arg mode        "${INPUT_MODE:-steal}" \
+		   --arg filter      "${INPUT_FILTER}" \
+		   --arg image       "${INPUT_IMAGE}" \
+		'{
+			target: { path: $target_path },
+			feature: {
+				network: {
+					incoming: {
+						mode: $mode,
+						http_filter: {
+							header_filter: $filter
+						}
+					}
+				},
+				preview: {
+					image: $image
+				}
+			}
+		}' > "${CONFIG_FILE}"
+
+		# Optionally add target.namespace
 		if [[ -n "${INPUT_NAMESPACE:-}" ]]; then
-			jq -n \
-			   --arg target_path "${INPUT_TARGET}" \
-			   --arg target_ns   "${INPUT_NAMESPACE}" \
-			   --arg mode        "${INPUT_MODE:-steal}" \
-			   --arg filter      "${INPUT_FILTER}" \
-			   --arg image       "${INPUT_IMAGE}" \
-			   '{
-        target: { path: $target_path, namespace: $target_ns },
-        feature: {
-          network: {
-            incoming: {
-              mode: $mode,
-              http_filter: {
-                header_filter: $filter
-              }
-            }
-          },
-          preview: {
-            image: $image
-          }
-        }
-      }' > "${CONFIG_FILE}"
-		else
-			jq -n \
-			   --arg target "${INPUT_TARGET}" \
-			   --arg mode   "${INPUT_MODE:-steal}" \
-			   --arg filter "${INPUT_FILTER}" \
-			   --arg image  "${INPUT_IMAGE}" \
-			   '{
-        target: $target,
-        feature: {
-          network: {
-            incoming: {
-              mode: $mode,
-              http_filter: {
-                header_filter: $filter
-              }
-            }
-          },
-          preview: {
-            image: $image
-          }
-        }
-      }' > "${CONFIG_FILE}"
+			jq --arg ns "${INPUT_NAMESPACE}" \
+			   '.target.namespace = $ns' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
 		# Optionally add http_filter.ports (expects a JSON array string like "[80, 8080]")
@@ -127,11 +108,11 @@ case "${INPUT_ACTION}" in
 		#   {"type":"NewTask","name":"key: <value>","parent":"mirrord preview start"}
 		# We grab the .name field that starts with "key: " and strip the prefix.
 		SESSION_KEY=$(echo "${OUTPUT}" | jq -r '
-      select(.name != null)
-      | .name
-      | select(startswith("key: "))
-      | ltrimstr("key: ")
-    ' 2>/dev/null | head -1 || true)
+			select(.name != null)
+			| .name
+			| select(startswith("key: "))
+			| ltrimstr("key: ")
+		' 2>/dev/null | head -1 || true)
 
 		if [[ -z "${SESSION_KEY}" ]]; then
 			die "Could not extract session key from mirrord output."
