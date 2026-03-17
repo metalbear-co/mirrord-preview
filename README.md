@@ -81,7 +81,7 @@ jobs:
 | `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
 | `ports` | no | JSON array of HTTP filter ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.http_filter.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
 | `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Passed as a `--ttl` CLI flag. |
-| `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. |
+| `key` | **yes** (stop) / no (start) | Unique preview session identifier. Auto-generated on `start` if omitted. Referenced by `{{ key }}` in the filter. |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
 
 ---
