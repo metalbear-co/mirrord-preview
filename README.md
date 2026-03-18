@@ -67,6 +67,26 @@ jobs:
           key: pr-${{ github.event.pull_request.number }}
 ```
 
+### Using `extra_config`
+```
+- name: Start preview
+  uses: metalbear-co/mirrord-preview@main
+  with:
+    action: start
+    target: deployment/my-app
+    image: myrepo/myapp:latest
+    filter: 'x-preview-id: {{ key }}'
+    key: pr-${{ github.event.pull_request.number }}
+    extra_config: |
+      {
+        "feature": {
+          "copy_target": {
+            "scale_down": true
+          }
+        }
+      }
+```
+
 ---
 
 ## Inputs
@@ -74,15 +94,16 @@ jobs:
 | Input | Required | Description |
 |-------|----------|-------------|
 | `action` | **yes** | `start` or `stop`. |
-| `target` | **yes** (start) | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target`](https://metalbear.com/mirrord/docs/config/options#root-target). |
-| `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#root-target). |
+| `target` | **yes** (start) | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target.path`](https://metalbear.com/mirrord/docs/config/options#target-path). |
+| `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#target-namespace). |
 | `image` | **yes** (start) | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
 | `mode` | no | Traffic mode: `steal` or `mirror`. Defaults to `steal`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
 | `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
 | `ports` | no | JSON array of HTTP filter ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.http_filter.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
-| `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Passed as a `--ttl` CLI flag. |
-| `key` | **yes** (stop) / no (start) | Unique preview session identifier. Auto-generated on `start` if omitted. Referenced by `{{ key }}` in the filter. |
+| `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Maps to [`feature.preview.ttl_mins`](https://metalbear.com/mirrord/docs/config/options#feature-preview-ttl_mins). |
+| `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. Maps to top-level [`key`](https://metalbear.com/mirrord/docs/config/options#root-key). |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
+| `extra_config` | no | JSON object deep-merged into the generated `mirrord.json`. Allows setting any [mirrord config option](https://metalbear.com/mirrord/docs/config/options). Overlapping fields override the generated values. |
 
 ---
 
