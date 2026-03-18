@@ -37,6 +37,9 @@ inputs:
     description: Path to mirrord cli, will be used instead of the latest version when specified.
       Note that this works by symlinking `/usr/local/bin/mirrord` to this path.
     required: false
+  extra_config:
+    description: 'JSON object merged into the generated mirrord.json. Allows setting any additional mirrord config options. Overrides generated fields if overlapping.'
+    required: false
 
 outputs:
   session-key:
@@ -97,6 +100,7 @@ runs:
         INPUT_TTL_MINS: ${{ inputs.ttl_mins }}
         INPUT_KEY: ${{ inputs.key }}
         INPUT_IMAGE: ${{ inputs.image }}
+        INPUT_EXTRA_CONFIG: ${{ inputs.extra_config }}
         MIRRORD_PROGRESS_MODE: json
       run: |
         set -euo pipefail

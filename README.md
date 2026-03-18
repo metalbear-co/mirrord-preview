@@ -67,6 +67,26 @@ jobs:
           key: pr-${{ github.event.pull_request.number }}
 ```
 
+### Using `extra_config`
+```
+- name: Start preview
+  uses: metalbear-co/mirrord-preview@main
+  with:
+    action: start
+    target: deployment/my-app
+    image: myrepo/myapp:latest
+    filter: 'x-preview-id: {{ key }}'
+    key: pr-${{ github.event.pull_request.number }}
+    extra_config: |
+      {
+        "feature": {
+          "copy_target": {
+            "scale_down": true
+          }
+        }
+      }
+```
+
 ---
 
 ## Inputs
@@ -83,6 +103,7 @@ jobs:
 | `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Passed as a `--ttl` CLI flag. |
 | `key` | **yes** (stop) / no (start) | Unique preview session identifier. Auto-generated on `start` if omitted. Referenced by `{{ key }}` in the filter. |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
+| `extra_config` | no | JSON object deep-merged into the generated `mirrord.json`. Allows setting any [mirrord config option](https://metalbear.com/mirrord/docs/config/options). Overlapping fields override the generated values. |
 
 ---
 

@@ -12,6 +12,7 @@
 #   INPUT_TTL_MINS        - int or "infinite"           (start, optional)
 #   INPUT_KEY             - session key                 (start: optional, stop: required)
 #   INPUT_IMAGE           - container image for preview (start, required)
+#   INPUT_EXTRA_CONFIG    - JSON object to merge        (start, optional)
 #   MIRRORD_PROGRESS_MODE - should be "json"            (set by action.yml)
 #
 set -euo pipefail
@@ -69,6 +70,14 @@ case "${INPUT_ACTION}" in
 		if [[ -n "${INPUT_PORTS:-}" ]]; then
 			jq --argjson ports "${INPUT_PORTS}" \
 			   '.feature.network.incoming.http_filter.ports = $ports' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+		fi
+
+		# Deep-merge extra_config on top of the generated config.
+		# Uses jq's `*` operator for recursive object merge — extra_config wins on conflicts.
+		if [[ -n "${INPUT_EXTRA_CONFIG:-}" ]]; then
+			jq --argjson extra "${INPUT_EXTRA_CONFIG}" \
+			   '. * $extra' \
 			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
