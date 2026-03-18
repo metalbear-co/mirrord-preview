@@ -73,6 +73,25 @@ case "${INPUT_ACTION}" in
 			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
+		# Optionally add feature.preview.ttl_mins
+		if [[ -n "${INPUT_TTL_MINS:-}" ]]; then
+			if [[ "${INPUT_TTL_MINS}" == "infinite" ]]; then
+				jq '.feature.preview.ttl_mins = "infinite"' \
+				   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+			else
+				jq --argjson ttl "${INPUT_TTL_MINS}" \
+				   '.feature.preview.ttl_mins = $ttl' \
+				   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+			fi
+		fi
+
+		# Optionally add top-level key
+		if [[ -n "${INPUT_KEY:-}" ]]; then
+			jq --arg key "${INPUT_KEY}" \
+			   '.key = $key' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+		fi
+
 		# Deep-merge extra_config on top of the generated config.
 		# Uses jq's `*` operator for recursive object merge — extra_config wins on conflicts.
 		if [[ -n "${INPUT_EXTRA_CONFIG:-}" ]]; then
@@ -89,21 +108,12 @@ case "${INPUT_ACTION}" in
 		echo ""
 		echo "::endgroup::"
 
-		# ---- Assemble CLI args ----------------------------------------------- #
+		# ---- Run mirrord preview start --------------------------------------- #
 		CLI_ARGS=( "mirrord" "preview" "start" "-f" "${CONFIG_FILE}" )
-
-		if [[ -n "${INPUT_TTL_MINS:-}" ]]; then
-			CLI_ARGS+=( "--ttl" "${INPUT_TTL_MINS}" )
-		fi
-
-		if [[ -n "${INPUT_KEY:-}" ]]; then
-			CLI_ARGS+=( "--key" "${INPUT_KEY}" )
-		fi
 
 		echo "::group::Running mirrord preview start"
 		echo "+ ${CLI_ARGS[*]}"
 
-		# Run and capture output.
 		# MIRRORD_PROGRESS_MODE=json makes mirrord emit structured JSON progress.
 		OUTPUT=$( "${CLI_ARGS[@]}" 2>&1 ) || {
 			echo "${OUTPUT}"
