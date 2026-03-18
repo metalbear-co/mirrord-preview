@@ -94,8 +94,8 @@ jobs:
 | Input | Required | Description |
 |-------|----------|-------------|
 | `action` | **yes** | `start` or `stop`. |
-| `target` | **yes** (start) | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target`](https://metalbear.com/mirrord/docs/config/options#root-target). |
-| `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#root-target). |
+| `target` | **yes** (start) | Kubernetes target path, e.g. `deployment/my-app`. Maps to [`target.path`](https://metalbear.com/mirrord/docs/config/options#target-path). |
+| `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#target-namespace). |
 | `image` | **yes** (start) | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
 | `mode` | no | Traffic mode: `steal` or `mirror`. Defaults to `steal`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
 | `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
