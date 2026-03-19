@@ -16,7 +16,7 @@ This action allows running [mirrord preview environments](https://metalbear.com/
     namespace: my-namespace        # optional, defaults to current context namespace
     image: myrepo/myapp:latest
     mode: steal                    # optional, defaults to steal
-    filter: 'mirrord-preview-key: {{ key }}'
+    filter: 'baggage: mirrord-session={{ key }}'
     key: pr-${{ github.event.pull_request.number }}
 ```
 
@@ -52,7 +52,7 @@ jobs:
           image: myrepo/myapp:${{ github.sha }}
           ports: '[80, 8080]'
           ttl_mins: '60'
-          filter: 'mirrord-preview-key: {{ key }}'
+          filter: 'baggage: mirrord-session={{ key }}'
           key: pr-${{ github.event.pull_request.number }}
 
   preview-stop:
@@ -111,7 +111,7 @@ jobs:
 
 This action is a thin wrapper around the `mirrord preview` CLI command. It translates the action inputs into a [`mirrord.json`](https://metalbear.com/mirrord/docs/config/options) configuration file and passes it to `mirrord preview start -f <config>`. Unless `cli_path` is specified, the latest mirrord CLI is used.
 
-For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'mirrord-preview-key: {{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, and `image: myrepo/myapp:latest`, the generated config is:
+For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'baggage: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, and `image: myrepo/myapp:latest`, the generated config is:
 ```json
 {
   "target": {
@@ -123,7 +123,7 @@ For example, given `target: deployment/my-app`, `namespace: staging`, `mode: ste
       "incoming": {
         "mode": "steal",
         "http_filter": {
-          "header_filter": "mirrord-preview-key: {{ key }}",
+          "header_filter": "baggage: mirrord-session={{ key }}",
           "ports": [80, 8080]
         }
       }
