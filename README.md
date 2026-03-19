@@ -68,7 +68,7 @@ jobs:
 ```
 
 ### Using `extra_config`
-```
+```yaml
 - name: Start preview
   uses: metalbear-co/mirrord-preview@main
   with:
@@ -111,9 +111,10 @@ jobs:
 
 This action is a thin wrapper around the `mirrord preview` CLI command. It translates the action inputs into a [`mirrord.json`](https://metalbear.com/mirrord/docs/config/options) configuration file and passes it to `mirrord preview start -f <config>`. Unless `cli_path` is specified, the latest mirrord CLI is used.
 
-For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'baggage: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, and `image: myrepo/myapp:latest`, the generated config is:
+For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'baggage: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, `ttl_mins: '60'`, and `image: myrepo/myapp:latest`, the generated config is:
 ```json
 {
+  "key": "pr-42",
   "target": {
     "path": "deployment/my-app",
     "namespace": "staging"
@@ -129,12 +130,13 @@ For example, given `target: deployment/my-app`, `namespace: staging`, `mode: ste
       }
     },
     "preview": {
-      "image": "myrepo/myapp:latest"
+      "image": "myrepo/myapp:latest",
+      "ttl_mins": 60
     }
   }
 }
 ```
 
-The `ttl_mins` and `key` inputs are passed as CLI flags (`--ttl`, `--key`) rather than config fields.
+If `extra_config` is provided, it is deep-merged on top of the generated config, allowing any [mirrord config option](https://metalbear.com/mirrord/docs/config/options) to be added or overridden.
 
 For `action: stop`, the action simply runs `mirrord preview stop --key <key>`.
