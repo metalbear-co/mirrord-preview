@@ -109,7 +109,7 @@ case "${INPUT_ACTION}" in
 		echo "::endgroup::"
 
 		# ---- Run mirrord preview start --------------------------------------- #
-		CLI_ARGS=( "mirrord" "preview" "start" "-f" "${CONFIG_FILE}" )
+		CLI_ARGS=( "mirrord" "preview" "start" "-f" "${CONFIG_FILE}" "--force")
 
 		echo "::group::Running mirrord preview start"
 		echo "+ ${CLI_ARGS[*]}"
