@@ -82,6 +82,7 @@ runs:
 
     - name: Symlink `/usr/local/bin/mirrord` to user-provided `cli_path`
       if: inputs.cli_path != ''
+      shell: bash
       run: ln -s ${{ inputs.cli_path }} /usr/local/bin/mirrord
 
     # ------------------------------------------------------------------ #
