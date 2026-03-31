@@ -56,7 +56,12 @@ runs:
       id: mirrord-version
       shell: bash
       run: |
-        MIRRORD_VERSION=$(curl -fsSL https://version.mirrord.dev/v1/version 2>/dev/null || echo "latest")
+        CARGO_TOML=$(curl -fsSL https://github.com/metalbear-co/mirrord/raw/latest/Cargo.toml 2>/dev/null)
+        MIRRORD_VERSION=$(echo "$CARGO_TOML" | grep -m 1 version | cut -d' ' -f3 | tr -d '"')
+        if [[ -z "$MIRRORD_VERSION" ]]; then
+          echo "::error::Failed to detect latest mirrord version from Cargo.toml"
+          exit 1
+        fi
         echo "version=${MIRRORD_VERSION}" >> "$GITHUB_OUTPUT"
         echo "::debug::mirrord version resolved to ${MIRRORD_VERSION}"
 
