@@ -66,10 +66,10 @@ case "${INPUT_ACTION}" in
 			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
-		# Optionally add http_filter.ports (expects a JSON array string like "[80, 8080]")
+		# Optionally add incoming.ports (expects a JSON array string like "[80, 8080]")
 		if [[ -n "${INPUT_PORTS:-}" ]]; then
 			jq --argjson ports "${INPUT_PORTS}" \
-			   '.feature.network.incoming.http_filter.ports = $ports' \
+			   '.feature.network.incoming.ports = $ports' \
 			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
