@@ -16,7 +16,6 @@ This action allows running [mirrord preview environments](https://metalbear.com/
     namespace: my-namespace        # optional, defaults to current context namespace
     image: myrepo/myapp:latest
     mode: steal                    # optional, defaults to steal
-    filter: 'baggage: mirrord-session={{ key }}'
     key: pr-${{ github.event.pull_request.number }}
 ```
 
@@ -52,7 +51,6 @@ jobs:
           image: myrepo/myapp:${{ github.sha }}
           ports: '[80, 8080]'
           ttl_mins: '60'
-          filter: 'baggage: mirrord-session={{ key }}'
           key: pr-${{ github.event.pull_request.number }}
 
   preview-stop:
@@ -98,7 +96,7 @@ jobs:
 | `namespace` | no | Kubernetes namespace of the target. Defaults to current context namespace. Maps to [`target.namespace`](https://metalbear.com/mirrord/docs/config/options#target-namespace). |
 | `image` | **yes** (start) | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
 | `mode` | no | Traffic mode: `steal` or `mirror`. Defaults to `steal`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
-| `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
+| `filter` | no | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Defaults to `baggage: *.mirrord-session={{key}}.*`. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
 | `ports` | no | Optional JSON array of incoming ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-ports). |
 | `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Maps to [`feature.preview.ttl_mins`](https://metalbear.com/mirrord/docs/config/options#feature-preview-ttl_mins). |
 | `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. Maps to top-level [`key`](https://metalbear.com/mirrord/docs/config/options#root-key). |
@@ -111,7 +109,7 @@ jobs:
 
 This action is a thin wrapper around the `mirrord preview` CLI command. It translates the action inputs into a [`mirrord.json`](https://metalbear.com/mirrord/docs/config/options) configuration file and passes it to `mirrord preview start -f <config>`. Unless `cli_path` is specified, the latest mirrord CLI is used.
 
-For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'baggage: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, `ttl_mins: '60'`, and `image: myrepo/myapp:latest`, the generated config is:
+For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'x-traffic: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, `ttl_mins: '60'`, and `image: myrepo/myapp:latest`, the generated config is:
 ```json
 {
   "key": "pr-42",
@@ -125,7 +123,7 @@ For example, given `target: deployment/my-app`, `namespace: staging`, `mode: ste
         "mode": "steal",
         "ports": [80, 8080],
         "http_filter": {
-          "header_filter": "baggage: mirrord-session={{ key }}"
+          "header_filter": "x-traffic: mirrord-session={{ key }}"
         }
       }
     },
