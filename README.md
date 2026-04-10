@@ -99,7 +99,7 @@ jobs:
 | `image` | **yes** (start) | Container image for the preview pod. Maps to [`feature.preview.image`](https://metalbear.com/mirrord/docs/config/options#feature-preview-image). |
 | `mode` | no | Traffic mode: `steal` or `mirror`. Defaults to `steal`. Maps to [`feature.network.incoming.mode`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming). |
 | `filter` | **yes** (start) | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
-| `ports` | no | JSON array of HTTP filter ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.http_filter.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
+| `ports` | no | Optional JSON array of incoming ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-ports). |
 | `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Maps to [`feature.preview.ttl_mins`](https://metalbear.com/mirrord/docs/config/options#feature-preview-ttl_mins). |
 | `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. Maps to top-level [`key`](https://metalbear.com/mirrord/docs/config/options#root-key). |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
@@ -123,9 +123,9 @@ For example, given `target: deployment/my-app`, `namespace: staging`, `mode: ste
     "network": {
       "incoming": {
         "mode": "steal",
+        "ports": [80, 8080],
         "http_filter": {
-          "header_filter": "baggage: mirrord-session={{ key }}",
-          "ports": [80, 8080]
+          "header_filter": "baggage: mirrord-session={{ key }}"
         }
       }
     },
