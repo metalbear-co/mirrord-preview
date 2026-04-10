@@ -7,7 +7,7 @@
 #   INPUT_TARGET          - Kubernetes target path      (start, required)
 #   INPUT_NAMESPACE       - Kubernetes namespace        (start, optional)
 #   INPUT_MODE            - steal | mirror              (start, default: steal)
-#   INPUT_FILTER          - header filter regex         (start, required)
+#   INPUT_FILTER          - header filter regex         (start, optional)
 #   INPUT_PORTS           - JSON array of ports         (start, optional)
 #   INPUT_TTL_MINS        - int or "infinite"           (start, optional)
 #   INPUT_KEY             - session key                 (start: optional, stop: required)
@@ -29,7 +29,6 @@ case "${INPUT_ACTION}" in
 	start)
 		# ---- Validate required inputs ---------------------------------------- #
 		[[ -z "${INPUT_TARGET:-}" ]] && die "input 'target' is required for action=start"
-		[[ -z "${INPUT_FILTER:-}" ]] && die "input 'filter' is required for action=start"
 		[[ -z "${INPUT_IMAGE:-}" ]] && die "input 'image' is required for action=start"
 
 		# ---- Build mirrord.json ---------------------------------------------- #
@@ -40,17 +39,13 @@ case "${INPUT_ACTION}" in
 		jq -n \
 		   --arg target_path "${INPUT_TARGET}" \
 		   --arg mode        "${INPUT_MODE:-steal}" \
-		   --arg filter      "${INPUT_FILTER}" \
 		   --arg image       "${INPUT_IMAGE}" \
 		'{
 			target: { path: $target_path },
 			feature: {
 				network: {
 					incoming: {
-						mode: $mode,
-						http_filter: {
-							header_filter: $filter
-						}
+						mode: $mode
 					}
 				},
 				preview: {
@@ -63,6 +58,13 @@ case "${INPUT_ACTION}" in
 		if [[ -n "${INPUT_NAMESPACE:-}" ]]; then
 			jq --arg ns "${INPUT_NAMESPACE}" \
 			   '.target.namespace = $ns' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+		fi
+
+		# Optionally add http_filter.header_filter
+		if [[ -n "${INPUT_FILTER:-}" ]]; then
+			jq --arg filter "${INPUT_FILTER}" \
+			   '.feature.network.incoming.http_filter.header_filter = $filter' \
 			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
