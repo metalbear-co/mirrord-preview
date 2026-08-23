@@ -12,7 +12,7 @@ inputs:
     description: 'Kubernetes target path (e.g. deployment/my-app). Required for start.'
     required: false
   namespace:
-    description: 'Kubernetes namespace of the target. Optional, defaults to current context namespace.'
+    description: 'Kubernetes namespace of the target. Optional. On start, defaults to the current context namespace; on stop, sessions matching the key are searched across all namespaces unless this narrows the scope.'
     required: false
   mode:
     description: 'Traffic mode: "steal" or "mirror". Default: steal'

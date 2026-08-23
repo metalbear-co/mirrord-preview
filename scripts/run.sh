@@ -5,7 +5,7 @@
 # Expects the following environment variables (set by action.yml):
 #   INPUT_ACTION          - "start" or "stop"
 #   INPUT_TARGET          - Kubernetes target path      (start, required)
-#   INPUT_NAMESPACE       - Kubernetes namespace        (start, optional)
+#   INPUT_NAMESPACE       - Kubernetes namespace        (start + stop, optional)
 #   INPUT_MODE            - steal | mirror              (start, default: steal)
 #   INPUT_FILTER          - header filter regex         (start, optional)
 #   INPUT_PORTS           - JSON array of ports         (start, optional)
@@ -150,10 +150,19 @@ case "${INPUT_ACTION}" in
 		# ---- Validate required inputs ---------------------------------------- #
 		[[ -z "${INPUT_KEY:-}" ]] && die "input 'key' is required for action=stop"
 
-		echo "::group::Running mirrord preview stop"
-		echo "+ mirrord preview stop --key ${INPUT_KEY}"
+		# Sessions live in the namespace of their target, so a stop scoped to the
+		# kubeconfig default namespace can silently miss them. Search the given
+		# namespace, or every namespace when none is given.
+		if [[ -n "${INPUT_NAMESPACE:-}" ]]; then
+			NAMESPACE_ARGS=(--namespace "${INPUT_NAMESPACE}")
+		else
+			NAMESPACE_ARGS=(--all-namespaces)
+		fi
 
-		mirrord preview stop --key "${INPUT_KEY}" || die "mirrord preview stop failed"
+		echo "::group::Running mirrord preview stop"
+		echo "+ mirrord preview stop --key ${INPUT_KEY} ${NAMESPACE_ARGS[*]}"
+
+		mirrord preview stop --key "${INPUT_KEY}" "${NAMESPACE_ARGS[@]}" || die "mirrord preview stop failed"
 
 		echo "::endgroup::"
 		echo "::notice::Preview session ${INPUT_KEY} stopped."
