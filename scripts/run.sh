@@ -142,6 +142,22 @@ case "${INPUT_ACTION}" in
 			echo "::notice::Preview session key: ${SESSION_KEY}"
 		fi
 
+		# ---- Extract shareable preview URL from JSON output ------------------ #
+		# When the operator has a share domain configured, mirrord emits:
+		#   {"type":"NewTask","name":"preview URL: https://<slug>.<domain>","parent":"mirrord preview start"}
+		# The line is absent otherwise, so an empty output is not an error.
+		PREVIEW_URL=$(echo "${OUTPUT}" | jq -r '
+			select(.name != null)
+			| .name
+			| select(startswith("preview URL: "))
+			| ltrimstr("preview URL: ")
+		' 2>/dev/null | head -1 || true)
+
+		echo "preview-url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+		if [[ -n "${PREVIEW_URL}" ]]; then
+			echo "::notice::Preview URL: ${PREVIEW_URL}"
+		fi
+
 		# Clean up temp config
 		rm -rf "${CONFIG_DIR}"
 		;;

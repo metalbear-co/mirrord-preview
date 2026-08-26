@@ -45,6 +45,9 @@ outputs:
   session-key:
     description: 'The preview session key (extracted from mirrord CLI output)'
     value: ${{ steps.run-preview.outputs.session-key }}
+  preview-url:
+    description: 'Shareable preview URL (extracted from mirrord CLI output). Empty when the operator has no share domain configured.'
+    value: ${{ steps.run-preview.outputs.preview-url }}
 
 runs:
   using: 'composite'
