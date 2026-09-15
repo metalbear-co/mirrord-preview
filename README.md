@@ -65,6 +65,28 @@ jobs:
           key: pr-${{ github.event.pull_request.number }}
 ```
 
+### Idle previews (scale to zero)
+
+A preview that starts idle runs no pods until the first matching request or queue message
+arrives, and one with `idle_sleep_after_secs` scales back to zero after that many seconds
+without traffic. This keeps a preview per open PR essentially free while nobody uses it. See
+[Auto Scaling Idle Mode](https://metalbear.com/mirrord/docs/use-cases/preview-environments#auto-scaling-idle-mode)
+for how held requests and queue messages behave while the pods start.
+
+```yaml
+- name: Start preview
+  uses: metalbear-co/mirrord-preview@main
+  with:
+    action: start
+    target: deployment/my-app
+    image: myrepo/myapp:${{ github.sha }}
+    key: pr-${{ github.event.pull_request.number }}
+    ttl_mins: infinite
+    start_idle: 'true'
+    idle_sleep_after_secs: '300'
+    idle_wake_timeout_secs: '120'
+```
+
 ### Using `extra_config`
 ```yaml
 - name: Start preview
@@ -99,6 +121,9 @@ jobs:
 | `filter` | no | Header filter regex for incoming HTTP traffic. Use `{{ key }}` to reference the session key. Defaults to `baggage: *.mirrord-session={{key}}.*`. Maps to [`feature.network.incoming.http_filter.header_filter`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-http_filter). |
 | `ports` | no | Optional JSON array of incoming ports, e.g. `[80, 8080]`. Maps to [`feature.network.incoming.ports`](https://metalbear.com/mirrord/docs/config/options#feature-network-incoming-ports). |
 | `ttl_mins` | no | Session time-to-live in minutes. Integer or `"infinite"`. Maps to [`feature.preview.ttl_mins`](https://metalbear.com/mirrord/docs/config/options#feature-preview-ttl_mins). |
+| `start_idle` | no | Start the preview with zero pods; the first matching request or queue message boots them. `true` or `false`, defaults to `false`. Maps to [`feature.preview.idle.start_idle`](https://metalbear.com/mirrord/docs/config/options#feature-preview-idle-start_idle). |
+| `idle_sleep_after_secs` | no | Scale the preview pods to zero after this many seconds without traffic (minimum 30). Unset means the preview never idles on its own. Maps to [`feature.preview.idle.sleep_after_secs`](https://metalbear.com/mirrord/docs/config/options#feature-preview-idle-sleep_after_secs). |
+| `idle_wake_timeout_secs` | no | How many seconds a waking preview holds incoming requests while its pod starts before they fail. Defaults to the operator default (90). Maps to [`feature.preview.idle.wake_timeout_secs`](https://metalbear.com/mirrord/docs/config/options#feature-preview-idle-wake_timeout_secs). |
 | `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. Maps to top-level [`key`](https://metalbear.com/mirrord/docs/config/options#root-key). |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
 | `extra_config` | no | JSON object deep-merged into the generated `mirrord.json`. Allows setting any [mirrord config option](https://metalbear.com/mirrord/docs/config/options). Overlapping fields override the generated values. |
@@ -132,6 +157,15 @@ For example, given `target: deployment/my-app`, `namespace: staging`, `mode: ste
       "ttl_mins": 60
     }
   }
+}
+```
+
+The idle inputs land under `feature.preview.idle`: `start_idle: 'true'`, `idle_sleep_after_secs: '300'` and `idle_wake_timeout_secs: '120'` add
+```json
+"idle": {
+  "start_idle": true,
+  "sleep_after_secs": 300,
+  "wake_timeout_secs": 120
 }
 ```
 

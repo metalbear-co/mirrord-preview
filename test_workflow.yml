@@ -35,6 +35,9 @@ jobs:
           filter: 'x-preview-id: test-123'
           # ports: '[80, 8080]'
           # ttl_mins: '30'
+          # start_idle: 'true'
+          # idle_sleep_after_secs: '60'
+          # idle_wake_timeout_secs: '120'
           key: 'test-key-123'
           image: "byjg/static-httpserver"
 
