@@ -10,6 +10,9 @@
 #   INPUT_FILTER          - header filter regex         (start, optional)
 #   INPUT_PORTS           - JSON array of ports         (start, optional)
 #   INPUT_TTL_MINS        - int or "infinite"           (start, optional)
+#   INPUT_START_IDLE      - "true" | "false"            (start, default: false)
+#   INPUT_IDLE_SLEEP_AFTER_SECS  - int >= 30            (start, optional)
+#   INPUT_IDLE_WAKE_TIMEOUT_SECS - int                  (start, optional)
 #   INPUT_KEY             - session key                 (start: optional, stop: required)
 #   INPUT_IMAGE           - container image for preview (start, required)
 #   INPUT_EXTRA_CONFIG    - JSON object to merge        (start, optional)
@@ -85,6 +88,33 @@ case "${INPUT_ACTION}" in
 				   '.feature.preview.ttl_mins = $ttl' \
 				   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 			fi
+		fi
+
+		# Optionally add feature.preview.idle.* - each input maps to one field, so a
+		# workflow can turn on any subset of idle mode.
+		case "${INPUT_START_IDLE:-false}" in
+			true|True|TRUE)
+				jq '.feature.preview.idle.start_idle = true' \
+				   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+				;;
+			false|False|FALSE|"") ;;
+			*) die "input 'start_idle' must be \"true\" or \"false\", got '${INPUT_START_IDLE}'" ;;
+		esac
+
+		if [[ -n "${INPUT_IDLE_SLEEP_AFTER_SECS:-}" ]]; then
+			[[ "${INPUT_IDLE_SLEEP_AFTER_SECS}" =~ ^[0-9]+$ ]] \
+				|| die "input 'idle_sleep_after_secs' must be an integer, got '${INPUT_IDLE_SLEEP_AFTER_SECS}'"
+			jq --argjson secs "${INPUT_IDLE_SLEEP_AFTER_SECS}" \
+			   '.feature.preview.idle.sleep_after_secs = $secs' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+		fi
+
+		if [[ -n "${INPUT_IDLE_WAKE_TIMEOUT_SECS:-}" ]]; then
+			[[ "${INPUT_IDLE_WAKE_TIMEOUT_SECS}" =~ ^[0-9]+$ ]] \
+				|| die "input 'idle_wake_timeout_secs' must be an integer, got '${INPUT_IDLE_WAKE_TIMEOUT_SECS}'"
+			jq --argjson secs "${INPUT_IDLE_WAKE_TIMEOUT_SECS}" \
+			   '.feature.preview.idle.wake_timeout_secs = $secs' \
+			   "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
 		fi
 
 		# Optionally add top-level key

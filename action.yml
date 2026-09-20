@@ -27,6 +27,16 @@ inputs:
   ttl_mins:
     description: 'Session time-to-live in minutes. Integer or "infinite".'
     required: false
+  start_idle:
+    description: 'Start the preview with zero pods; the first matching request or queue message boots them. "true" or "false". Default: false'
+    required: false
+    default: 'false'
+  idle_sleep_after_secs:
+    description: 'Scale the preview pods to zero after this many seconds without traffic (minimum 30). Unset means the preview never idles on its own.'
+    required: false
+  idle_wake_timeout_secs:
+    description: 'How many seconds a waking preview holds incoming requests while its pod starts before they fail. Defaults to the operator default (90).'
+    required: false
   image:
     description: 'Container image for the preview environment (e.g. myrepo/myapp:latest). Required for start.'
     required: false
@@ -107,6 +117,9 @@ runs:
         INPUT_FILTER: ${{ inputs.filter }}
         INPUT_PORTS: ${{ inputs.ports }}
         INPUT_TTL_MINS: ${{ inputs.ttl_mins }}
+        INPUT_START_IDLE: ${{ inputs.start_idle }}
+        INPUT_IDLE_SLEEP_AFTER_SECS: ${{ inputs.idle_sleep_after_secs }}
+        INPUT_IDLE_WAKE_TIMEOUT_SECS: ${{ inputs.idle_wake_timeout_secs }}
         INPUT_KEY: ${{ inputs.key }}
         INPUT_IMAGE: ${{ inputs.image }}
         INPUT_EXTRA_CONFIG: ${{ inputs.extra_config }}
