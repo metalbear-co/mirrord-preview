@@ -1,0 +1,60 @@
+name: 'Install mirrord'
+description: 'Install the mirrord CLI, cached per runner OS, architecture and version'
+branding:
+  icon: 'download'
+  color: 'purple'
+
+inputs:
+  version:
+    description: 'mirrord version to install, e.g. 3.250.0. Defaults to the latest release.'
+    required: false
+
+outputs:
+  version:
+    description: 'The mirrord version this action resolved and installed'
+    value: ${{ steps.mirrord-version.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Resolve mirrord version
+      id: mirrord-version
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        MIRRORD_VERSION="$INPUT_VERSION"
+        if [[ -z "$MIRRORD_VERSION" ]]; then
+          CARGO_TOML=$(curl -fsSL https://github.com/metalbear-co/mirrord/raw/latest/Cargo.toml 2>/dev/null)
+          MIRRORD_VERSION=$(echo "$CARGO_TOML" | grep -m 1 version | cut -d' ' -f3 | tr -d '"')
+        fi
+        if [[ -z "$MIRRORD_VERSION" ]]; then
+          echo "::error::Failed to detect latest mirrord version from Cargo.toml"
+          exit 1
+        fi
+        echo "version=${MIRRORD_VERSION}" >> "$GITHUB_OUTPUT"
+        echo "::debug::mirrord version resolved to ${MIRRORD_VERSION}"
+
+    - name: Restore mirrord CLI from cache
+      id: cache-mirrord
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/mirrord
+        key: mirrord-${{ runner.os }}-${{ runner.arch }}-${{ steps.mirrord-version.outputs.version }}
+
+    - name: Install mirrord CLI
+      if: steps.cache-mirrord.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        MIRRORD_VERSION: ${{ steps.mirrord-version.outputs.version }}
+      run: |
+        # A mirrord already on the runner is kept unless the caller asked for a different version.
+        if command -v mirrord &>/dev/null \
+          && [[ -z "$INPUT_VERSION" || "$(mirrord --version)" == "mirrord $MIRRORD_VERSION" ]]; then
+          echo "mirrord already available: $(mirrord --version)"
+        else
+          echo "Installing mirrord ${MIRRORD_VERSION}..."
+          curl -fsSL https://raw.githubusercontent.com/metalbear-co/mirrord/main/scripts/install.sh | VERSION="$MIRRORD_VERSION" bash
+          echo "mirrord installed: $(mirrord --version)"
+        fi
