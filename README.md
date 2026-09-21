@@ -107,6 +107,20 @@ for how held requests and queue messages behave while the pods start.
       }
 ```
 
+### Installing only the mirrord CLI
+
+The preview action installs mirrord through `metalbear-co/mirrord-preview/install`, which also works on its own for jobs that run other `mirrord` commands. The binary is cached per runner OS, architecture and version.
+
+```yaml
+- name: Install mirrord
+  id: mirrord
+  uses: metalbear-co/mirrord-preview/install@master
+  with:
+    version: '3.250.0'             # optional, defaults to the latest release
+
+- run: mirrord --version            # steps.mirrord.outputs.version holds the installed version
+```
+
 ---
 
 ## Inputs
@@ -126,13 +140,14 @@ for how held requests and queue messages behave while the pods start.
 | `idle_wake_timeout_secs` | no | How many seconds a waking preview holds incoming requests while its pod starts before they fail. Defaults to the operator default (90). Maps to [`feature.preview.idle.wake_timeout_secs`](https://metalbear.com/mirrord/docs/config/options#feature-preview-idle-wake_timeout_secs). |
 | `key` | **yes** (stop) / optional (start) | Unique preview session identifier. Auto-generated on start if omitted. Referenced by `{{ key }}` in the filter. Maps to top-level [`key`](https://metalbear.com/mirrord/docs/config/options#root-key). |
 | `cli_path` | no | Path to a pre-existing mirrord binary. Skips downloading the latest release. Useful for testing unreleased builds. |
+| `mirrord_version` | no | mirrord CLI version to install, e.g. `3.250.0`. Defaults to the latest release. Ignored when `cli_path` is set. |
 | `extra_config` | no | JSON object deep-merged into the generated `mirrord.json`. Allows setting any [mirrord config option](https://metalbear.com/mirrord/docs/config/options). Overlapping fields override the generated values. |
 
 ---
 
 ## How it works
 
-This action is a thin wrapper around the `mirrord preview` CLI command. It translates the action inputs into a [`mirrord.json`](https://metalbear.com/mirrord/docs/config/options) configuration file and passes it to `mirrord preview start -f <config>`. Unless `cli_path` is specified, the latest mirrord CLI is used.
+This action is a thin wrapper around the `mirrord preview` CLI command. It translates the action inputs into a [`mirrord.json`](https://metalbear.com/mirrord/docs/config/options) configuration file and passes it to `mirrord preview start -f <config>`. Unless `cli_path` is specified, the CLI comes from the [install action](#installing-only-the-mirrord-cli) in this repo: the latest release, or the one named by `mirrord_version`.
 
 For example, given `target: deployment/my-app`, `namespace: staging`, `mode: steal`, `filter: 'x-traffic: mirrord-session={{ key }}'`, `key: pr-42`, `ports: '[80, 8080]'`, `ttl_mins: '60'`, and `image: myrepo/myapp:latest`, the generated config is:
 ```json
