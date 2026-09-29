@@ -47,6 +47,9 @@ inputs:
     description: Path to mirrord cli, will be used instead of the latest version when specified.
       Note that this works by symlinking `/usr/local/bin/mirrord` to this path.
     required: false
+  mirrord_version:
+    description: 'mirrord CLI version to install, e.g. 3.250.0. Defaults to the latest release. Ignored when cli_path is set.'
+    required: false
   extra_config:
     description: 'JSON object merged into the generated mirrord.json. Allows setting any additional mirrord config options. Overrides generated fields if overlapping.'
     required: false
@@ -63,40 +66,15 @@ runs:
   using: 'composite'
   steps:
     # ------------------------------------------------------------------ #
-    # 1. Install or restore mirrord CLI from cache
+    # 1. Install mirrord CLI
     # ------------------------------------------------------------------ #
-    - name: Detect latest mirrord version
-      id: mirrord-version
-      shell: bash
-      run: |
-        CARGO_TOML=$(curl -fsSL https://github.com/metalbear-co/mirrord/raw/latest/Cargo.toml 2>/dev/null)
-        MIRRORD_VERSION=$(echo "$CARGO_TOML" | grep -m 1 version | cut -d' ' -f3 | tr -d '"')
-        if [[ -z "$MIRRORD_VERSION" ]]; then
-          echo "::error::Failed to detect latest mirrord version from Cargo.toml"
-          exit 1
-        fi
-        echo "version=${MIRRORD_VERSION}" >> "$GITHUB_OUTPUT"
-        echo "::debug::mirrord version resolved to ${MIRRORD_VERSION}"
-
-    - name: Restore mirrord CLI from cache
-      if: inputs.cli_path == ''
-      id: cache-mirrord
-      uses: actions/cache@v4
-      with:
-        path: /usr/local/bin/mirrord
-        key: mirrord-${{ runner.os }}-${{ runner.arch }}-${{ steps.mirrord-version.outputs.version }}
-
+    # A composite action resolves `./install` against the caller's workspace, not against this
+    # repo, so the install action is referenced by its full name.
     - name: Install mirrord CLI
-      if: steps.cache-mirrord.outputs.cache-hit != 'true' && inputs.cli_path == ''
-      shell: bash
-      run: |
-        if command -v mirrord &>/dev/null; then
-          echo "mirrord already available: $(mirrord --version)"
-        else
-          echo "Installing mirrord..."
-          curl -fsSL https://raw.githubusercontent.com/metalbear-co/mirrord/main/scripts/install.sh | bash
-          echo "mirrord installed: $(mirrord --version)"
-        fi
+      if: inputs.cli_path == ''
+      uses: metalbear-co/mirrord-preview/install@master
+      with:
+        version: ${{ inputs.mirrord_version }}
 
     - name: Symlink `/usr/local/bin/mirrord` to user-provided `cli_path`
       if: inputs.cli_path != ''
