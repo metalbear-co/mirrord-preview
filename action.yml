@@ -50,6 +50,13 @@ inputs:
   mirrord_version:
     description: 'mirrord CLI version to install, e.g. 3.250.0. Defaults to the latest release. Ignored when cli_path is set.'
     required: false
+  mirrord_checksum:
+    description: >-
+      Expected SHA-256 of the mirrord release asset for this runner (mirrord_linux_<arch>.zip,
+      mirrord_mac_universal.zip, or mirrord.exe), as printed on the release page. Pins the binary
+      itself: a mismatch fails the step. Without it the download is still checked against the
+      checksum file published with the release. Ignored when cli_path is set.
+    required: false
   extra_config:
     description: 'JSON object merged into the generated mirrord.json. Allows setting any additional mirrord config options. Overrides generated fields if overlapping.'
     required: false
@@ -68,13 +75,14 @@ runs:
     # ------------------------------------------------------------------ #
     # 1. Install mirrord CLI
     # ------------------------------------------------------------------ #
-    # A composite action resolves `./install` against the caller's workspace, not against this
-    # repo, so the install action is referenced by its full name.
+    # setup-mirrord verifies the download against the release's checksum file and caches the
+    # binary per runner OS, architecture and version.
     - name: Install mirrord CLI
       if: inputs.cli_path == ''
-      uses: metalbear-co/mirrord-preview/install@master
+      uses: metalbear-co/setup-mirrord@v1
       with:
         version: ${{ inputs.mirrord_version }}
+        checksum: ${{ inputs.mirrord_checksum }}
 
     - name: Symlink `/usr/local/bin/mirrord` to user-provided `cli_path`
       if: inputs.cli_path != ''
